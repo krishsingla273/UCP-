@@ -1,0 +1,31 @@
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 920 440' font-family='ui-monospace,Menlo,Consolas,monospace' font-size='12'>
+<rect width='920' height='440' fill='#f6f3ea'/>
+<text x='62' y='26' font-size='15' font-weight='bold' fill='#1d2a2e'>Throughput vs packet loss</text>
+<line x1='62.0' y1='46' x2='62.0' y2='388' stroke='#d9d3c3'/><text x='62.0' y='406' fill='#5b676a' text-anchor='middle'>0</text>
+<line x1='145.4' y1='46' x2='145.4' y2='388' stroke='#d9d3c3'/><text x='145.4' y='406' fill='#5b676a' text-anchor='middle'>0.5</text>
+<line x1='228.8' y1='46' x2='228.8' y2='388' stroke='#d9d3c3'/><text x='228.8' y='406' fill='#5b676a' text-anchor='middle'>1</text>
+<line x1='312.2' y1='46' x2='312.2' y2='388' stroke='#d9d3c3'/><text x='312.2' y='406' fill='#5b676a' text-anchor='middle'>1.5</text>
+<line x1='395.6' y1='46' x2='395.6' y2='388' stroke='#d9d3c3'/><text x='395.6' y='406' fill='#5b676a' text-anchor='middle'>2</text>
+<line x1='479.0' y1='46' x2='479.0' y2='388' stroke='#d9d3c3'/><text x='479.0' y='406' fill='#5b676a' text-anchor='middle'>2.5</text>
+<line x1='562.4' y1='46' x2='562.4' y2='388' stroke='#d9d3c3'/><text x='562.4' y='406' fill='#5b676a' text-anchor='middle'>3</text>
+<line x1='645.8' y1='46' x2='645.8' y2='388' stroke='#d9d3c3'/><text x='645.8' y='406' fill='#5b676a' text-anchor='middle'>3.5</text>
+<line x1='729.2' y1='46' x2='729.2' y2='388' stroke='#d9d3c3'/><text x='729.2' y='406' fill='#5b676a' text-anchor='middle'>4</text>
+<line x1='812.6' y1='46' x2='812.6' y2='388' stroke='#d9d3c3'/><text x='812.6' y='406' fill='#5b676a' text-anchor='middle'>4.5</text>
+<line x1='896.0' y1='46' x2='896.0' y2='388' stroke='#d9d3c3'/><text x='896.0' y='406' fill='#5b676a' text-anchor='middle'>5</text>
+<line x1='62' y1='388.0' x2='896' y2='388.0' stroke='#d9d3c3'/><text x='54' y='392.0' fill='#5b676a' text-anchor='end'>100</text>
+<line x1='62' y1='46.0' x2='896' y2='46.0' stroke='#d9d3c3'/><text x='54' y='50.0' fill='#5b676a' text-anchor='end'>1000</text>
+<rect x='62' y='46' width='834' height='342' fill='none' stroke='#1d2a2e'/>
+<polyline fill='none' stroke='#0b7285' stroke-width='1.8' points='62.0,154.0 145.4,223.6 228.8,272.8 395.6,215.0 896.0,307.8 '/>
+<circle cx='62.0' cy='154.0' r='3.5' fill='#0b7285'/>
+<circle cx='145.4' cy='223.6' r='3.5' fill='#0b7285'/>
+<circle cx='228.8' cy='272.8' r='3.5' fill='#0b7285'/>
+<circle cx='395.6' cy='215.0' r='3.5' fill='#0b7285'/>
+<circle cx='896.0' cy='307.8' r='3.5' fill='#0b7285'/>
+<rect x='72' y='58' width='14' height='3' fill='#0b7285'/><text x='92' y='63' fill='#1d2a2e'>UDP-to-TCP engine</text>
+<polyline fill='none' stroke='#e8590c' stroke-width='1.8' stroke-dasharray='6 4' points='62.0,47.3 896.0,47.3 '/>
+<circle cx='62.0' cy='47.3' r='3.5' fill='#e8590c'/>
+<circle cx='896.0' cy='47.3' r='3.5' fill='#e8590c'/>
+<rect x='262' y='58' width='14' height='3' fill='#e8590c'/><text x='282' y='63' fill='#1d2a2e'>native TCP (clean link)</text>
+<text x='479' y='428' fill='#1d2a2e' text-anchor='middle'>packet loss (%)</text>
+<text transform='translate(16 217) rotate(-90)' fill='#1d2a2e' text-anchor='middle'>goodput (Mbps, log)</text>
+</svg>

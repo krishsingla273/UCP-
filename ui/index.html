@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#172b36">
+<title>UDP→TCP / Transport Lab</title>
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f1f0e9;--paper:#fffefa;--paper2:#f8f7f1;
+  --ink:#172b36;--mute:#68777a;--rule:#d9ddd4;
+  --cwnd:#167c80;--sig:#e96a4b;--ok:#247b56;--bad:#c4473c;
+  --grey:#849295;--cell:#d5e0d8;--deep:#733d55;
+  --lime:#d8f06a;--blue:#a8c9d1;
+  --mono:"SFMono-Regular",Consolas,"Liberation Mono",monospace;
+  --sans:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --shadow:0 14px 36px rgba(23,43,54,.07);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:
+  radial-gradient(circle at 1px 1px,rgba(23,43,54,.055) 1px,transparent 1.2px) 0 0/22px 22px,
+  var(--bg);color:var(--ink);font:14px/1.5 var(--sans)}
+button,input,select{font:inherit}
+button{transition:transform .16s ease,background .16s ease,border-color .16s ease,color .16s ease}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid rgba(22,124,128,.32);outline-offset:3px}
+.masthead{background:var(--ink);color:#f8f7f1;position:relative;overflow:hidden}
+.masthead:after{content:"";position:absolute;right:7%;top:-150px;width:430px;height:430px;border:1px solid rgba(216,240,106,.2);border-radius:50%;box-shadow:0 0 0 38px rgba(216,240,106,.035),0 0 0 78px rgba(216,240,106,.025);pointer-events:none}
+.topline{max-width:1500px;margin:auto;padding:22px 38px 18px;display:flex;justify-content:space-between;align-items:center;gap:20px;position:relative;z-index:1}
+.brand{display:flex;align-items:center;gap:13px}
+.brand-mark{width:38px;height:38px;border:1px solid rgba(216,240,106,.55);border-radius:11px;display:grid;place-items:center;color:var(--lime);font:700 15px var(--mono);letter-spacing:-2px}
+.brand-name{font:700 13px var(--mono);letter-spacing:.08em;text-transform:uppercase}
+.brand-name small{display:block;color:#aab8b5;font:10px var(--mono);letter-spacing:.16em;margin-top:3px}
+.local-tag{border:1px solid rgba(255,255,255,.22);padding:7px 11px;border-radius:99px;color:#d4ded9;font:10px var(--mono);letter-spacing:.1em;text-transform:uppercase}
+.local-tag:before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--lime);margin-right:8px;box-shadow:0 0 0 3px rgba(216,240,106,.13)}
+.hero{max-width:1500px;margin:auto;padding:24px 38px 38px;display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:32px;align-items:end;position:relative;z-index:1}
+.eyebrow{font:10px var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--lime);margin-bottom:13px}
+h1{font-size:clamp(38px,5vw,66px);line-height:.98;letter-spacing:-.065em;margin:0;font-weight:760}
+h1 .arrow{color:var(--lime);font-weight:400;padding:0 5px}
+.hero-copy{max-width:700px;color:#bdcbc7;font-size:15px;line-height:1.65;margin:17px 0 0}
+.hero-side{border-left:1px solid rgba(255,255,255,.2);padding:6px 0 5px 22px;color:#bdcbc7;font:11px/1.8 var(--mono)}
+.hero-side strong{display:block;color:var(--lime);font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+main{max-width:1500px;margin:0 auto;padding:28px 38px 70px;display:grid;grid-template-columns:340px minmax(0,1fr);gap:24px;align-items:start}
+.control-rail{background:var(--paper);border:1px solid var(--rule);border-radius:16px;padding:22px;box-shadow:var(--shadow);position:sticky;top:18px}
+.rail-top{display:flex;justify-content:space-between;align-items:center;padding-bottom:17px;border-bottom:1px solid var(--rule);margin-bottom:17px}
+.rail-top strong{font-size:14px;letter-spacing:-.02em}
+.rail-top span{font:10px var(--mono);color:var(--mute);background:var(--paper2);padding:5px 7px;border-radius:5px}
+h2{display:flex;align-items:center;gap:9px;font:700 10px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mute);margin:20px 0 11px}
+h2:first-child{margin-top:0}
+h2 .step{display:grid;place-items:center;width:21px;height:21px;border-radius:6px;background:var(--ink);color:var(--lime);font:700 10px var(--mono);letter-spacing:0}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{font:11px var(--mono);padding:8px 10px;border:1px solid #cbd2ca;background:var(--paper2);color:var(--ink);cursor:pointer;border-radius:7px}
+.chip:hover{border-color:var(--cwnd);transform:translateY(-1px)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+#presets .chip{padding:8px 11px}
+#sliders,#sliders2{margin-top:13px}
+.sl{display:grid;grid-template-columns:1fr auto;gap:4px 10px;margin:13px 0;font-size:12px}
+.sl label{color:#53666b;font-weight:550}
+.sl output{font:11px var(--mono);color:var(--ink);background:#eef2e9;padding:2px 6px;border-radius:4px}
+.sl input{grid-column:1/3;width:100%;accent-color:var(--cwnd);margin:5px 0 0;cursor:pointer}
+.rail-divider{height:1px;background:var(--rule);margin:19px 0}
+#cc{gap:7px}
+#cc .chip{font-size:10px}
+#fec{margin-top:12px}
+.lab{font:10px/1.5 var(--mono);color:var(--mute);width:100%;margin:0 0 2px}
+#fec .chip{padding:7px 9px}
+#run{margin-top:20px;width:100%;padding:15px 16px;font:700 12px var(--mono);letter-spacing:.13em;text-transform:uppercase;background:var(--lime);color:var(--ink);border:0;border-radius:8px;cursor:pointer;box-shadow:0 4px 0 #a8bd4f}
+#run:hover{transform:translateY(-2px);box-shadow:0 6px 0 #a8bd4f}
+#run:active{transform:translateY(2px);box-shadow:0 1px 0 #a8bd4f}
+#run:disabled{opacity:.6;cursor:wait;transform:none}
+.busy{height:3px;margin-top:9px;background:repeating-linear-gradient(90deg,var(--cwnd) 0 14px,transparent 14px 28px);animation:m .5s linear infinite;visibility:hidden;border-radius:4px}
+.busy.on{visibility:visible}
+@keyframes m{to{background-position:28px 0}}
+.ab{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:15px}
+.ab button{font:10px/1.4 var(--mono);padding:9px 7px;background:transparent;border:1px solid var(--rule);color:var(--ink);cursor:pointer;border-radius:7px}
+.ab button:hover:not(:disabled){border-color:var(--cwnd);color:var(--cwnd);background:#f2f8f4}
+.ab button:disabled{opacity:.5;cursor:wait}
+.hint{font:10px/1.55 var(--mono);color:var(--mute);margin-top:8px}
+.workspace{min-width:0}
+.workspace-head{display:flex;justify-content:space-between;align-items:end;gap:18px;margin:1px 2px 15px}
+.workspace-head .eyebrow{color:var(--cwnd);margin:0 0 5px}
+.workspace-head h2{font:650 22px var(--sans);letter-spacing:-.04em;text-transform:none;color:var(--ink);margin:0}
+.workspace-head .micro{font:10px var(--mono);color:var(--mute);white-space:nowrap}
+.head-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end}
+#report{font:700 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;padding:10px 13px;border:1px solid var(--ink);border-radius:7px;background:var(--ink);color:var(--lime);cursor:pointer;white-space:nowrap}
+#report:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 4px 12px rgba(23,43,54,.16)}
+#report:disabled{opacity:.38;cursor:not-allowed}
+#verdict{border:1px solid var(--rule);border-left:5px solid var(--cwnd);padding:17px 19px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;background:var(--paper);border-radius:11px 11px 0 0}
+#verdict strong{font:700 13px var(--mono);letter-spacing:.08em}
+#verdict.ok{border-left-color:var(--ok)}
+#verdict.ok strong{color:var(--ok)}
+#verdict.bad{border-left-color:var(--bad)}
+#verdict.bad strong{color:var(--bad)}
+#verdict.run{border-left-color:var(--sig)}
+#verdict.run strong{color:var(--sig)}
+#verdict span{font:10px var(--mono);color:var(--mute);overflow-wrap:anywhere}
+.strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:var(--paper);border:1px solid var(--rule);border-top:0;border-radius:0 0 11px 11px;overflow:hidden}
+.cell{padding:13px 15px;border-right:1px solid var(--rule);border-bottom:1px solid var(--rule);min-width:0}
+.cell:nth-child(3n){border-right:0}
+.cell:nth-last-child(-n+3){border-bottom:0}
+.cell small{display:block;font:9px var(--mono);color:var(--mute);text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px}
+.cell b{font:700 clamp(18px,2vw,24px) var(--mono);letter-spacing:-.06em;color:var(--ink);overflow-wrap:anywhere}
+.cell i{display:block;font:10px/1.5 var(--mono);color:var(--mute);font-style:normal;margin-top:3px}
+.note{padding:12px 16px;font:11px/1.6 var(--mono);color:var(--mute)}
+.card{border:1px solid var(--rule);background:var(--paper);margin-top:15px;border-radius:11px;overflow:hidden;box-shadow:0 5px 18px rgba(23,43,54,.035)}
+.card>.bar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--rule);font:700 10px var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--ink)}
+.card .bar span+span{display:flex;gap:6px;flex-wrap:wrap}
+.card button{font:10px var(--mono);background:var(--paper2);border:1px solid var(--rule);color:var(--ink);padding:6px 9px;cursor:pointer;border-radius:5px}
+.card button:hover{border-color:var(--cwnd);color:var(--cwnd)}
+#cv{width:100%;height:340px;display:block;padding:8px 10px 0}
+.lg{display:flex;gap:13px;padding:8px 16px 13px;font:10px var(--mono);color:var(--mute);flex-wrap:wrap;border-top:1px solid #edf0e9}
+.lg s{display:inline-block;width:17px;height:0;border-top:3px solid;vertical-align:middle;margin-right:5px;text-decoration:none}
+table{width:100%;border-collapse:collapse;font:11px var(--mono)}
+th,td{text-align:right;padding:9px 12px;border-bottom:1px solid #e9ece5;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--mute);font-weight:600;font-size:9px;text-transform:uppercase;letter-spacing:.09em;background:#f7f8f2}
+td .bar2{display:inline-block;height:6px;background:var(--sig);vertical-align:middle;margin-left:6px;border-radius:3px}
+tr.cur td{background:#f1f5e8}
+.hist{overflow-x:auto}
+#mapcv{width:100%;display:block;padding:10px 14px}
+.diag{margin:0;padding:12px 18px 15px 36px}
+.diag li{margin:7px 0;padding-left:3px;font-size:12px;line-height:1.65;color:#526268}
+.diag li::marker{color:var(--cwnd)}
+.diag b{font-weight:700;color:var(--ink)}
+.row2{display:flex;gap:14px;align-items:center;padding:13px 16px;flex-wrap:wrap;font:10px var(--mono);color:var(--mute)}
+.row2 label{display:flex;align-items:center;gap:7px}
+.row2 select{font:11px var(--mono);background:var(--paper2);color:var(--ink);border:1px solid var(--rule);padding:7px 8px;border-radius:5px}
+.btn2{font:700 10px var(--mono);letter-spacing:.04em;background:var(--ink);color:#fff;border:0;padding:9px 13px;cursor:pointer;border-radius:6px}
+.btn2:hover{background:var(--cwnd)}
+.btn2:disabled{opacity:.5;cursor:wait}
+.empty{padding:34px 16px;text-align:center;color:var(--mute);font:11px var(--mono)}
+#hres{overflow-x:auto}
+#hres .note{margin:4px 0 10px}
+#net{padding:0 4px}
+#net .note{padding:12px}
+#diagcard{border-left:4px solid var(--lime)}
+#diagcard>.bar{background:#f8faef}
+#tcpnote{padding:8px 3px}
+.footer{max-width:1500px;margin:0 auto;padding:0 38px 28px;color:#7d8987;font:10px var(--mono);display:flex;justify-content:space-between;gap:20px}
+.footer span:last-child{color:#9aa49e}
+@media(max-width:1050px){
+ main{grid-template-columns:300px minmax(0,1fr);padding-left:22px;padding-right:22px;gap:17px}
+ .topline,.hero{padding-left:22px;padding-right:22px}
+ .control-rail{padding:17px}
+}
+@media(max-width:800px){
+ main{grid-template-columns:1fr;padding-top:18px}
+ .control-rail{position:static}
+ .hero{grid-template-columns:1fr;padding-top:14px}
+ .hero-side{display:none}
+ .topline{padding-top:16px}
+ .workspace-head{align-items:start;flex-direction:column;gap:4px}
+}
+@media(max-width:540px){
+ .topline,.hero{padding-left:16px;padding-right:16px}
+ main{padding-left:12px;padding-right:12px}
+ .local-tag{font-size:9px}
+ .strip{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .cell:nth-child(3n){border-right:1px solid var(--rule)}
+ .cell:nth-child(2n){border-right:0}
+ .cell:nth-last-child(-n+3){border-bottom:1px solid var(--rule)}
+ .cell:nth-last-child(-n+2){border-bottom:0}
+ .card>.bar{align-items:flex-start}
+ .card>.bar>span:first-child{line-height:1.5}
+ #cv{height:270px}
+ .footer{padding:0 14px 20px;flex-direction:column;gap:4px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<header class="masthead">
+  <div class="topline">
+    <div class="brand">
+      <div class="brand-mark">↗↘</div>
+      <div class="brand-name">FIELD SYSTEMS <small>NETWORK EXPERIMENTS / 01</small></div>
+    </div>
+    <div class="local-tag">LOCAL TRANSPORT LAB</div>
+  </div>
+  <div class="hero">
+    <div>
+      <div class="eyebrow">A protocol you can put under pressure</div>
+      <h1>udp<span class="arrow">→</span>tcp</h1>
+      <p class="hero-copy">A reliable transport layer built on UDP. Change the network, run a transfer, and inspect what happened to every packet. The receiver verifies the result with SHA-256.</p>
+    </div>
+    <div class="hero-side">
+      <strong>Live experiment console</strong>
+      Configure a network → run a transfer → inspect the evidence.<br>
+      Built in C · Served locally · No cloud account
+    </div>
+  </div>
+</header>
+
+<main>
+  <aside class="control-rail">
+    <div class="rail-top"><strong>Experiment setup</strong><span>CONTROL / 01</span></div>
+
+    <h2><span class="step">01</span> Network conditions</h2>
+    <div id="presets" class="chips" aria-label="Network presets"></div>
+    <div id="sliders"></div>
+
+    <div class="rail-divider"></div>
+    <h2><span class="step">02</span> Transport settings</h2>
+    <div class="chips" id="cc" aria-label="Congestion control">
+      <button class="chip on" data-v="reno">Reno</button>
+      <button class="chip" data-v="cubic">CUBIC</button>
+      <button class="chip on" id="tlp" title="Resend the last segment early when acknowledgements stall">Tail-loss probe</button>
+      <button class="chip on" id="rack" title="Use packet timing to detect likely losses">RACK detection</button>
+    </div>
+    <div class="chips" id="fec">
+      <span class="lab">Forward error correction · extra parity can rebuild a lost packet</span>
+      <button class="chip on" data-v="0">Off</button>
+      <button class="chip" data-v="4">1 in 4</button>
+      <button class="chip" data-v="8">1 in 8</button>
+      <button class="chip" data-v="-1" title="Automatically adjusts parity based on observed loss">Auto</button>
+    </div>
+    <div id="sliders2"></div>
+
+    <button id="run" title="Keyboard shortcut: r">Run transfer&nbsp; ↗</button>
+    <div class="busy" id="busy" aria-hidden="true"></div>
+    <div class="ab">
+      <button id="abcc" title="Run the same network twice: Reno then CUBIC">A/B · Reno vs CUBIC</button>
+      <button id="abrec" title="Compare classic and modern loss recovery">A/B · Classic vs modern</button>
+    </div>
+    <div class="hint">A/B runs two transfers with the settings above and overlays their results.</div>
+  </aside>
+
+  <section class="workspace">
+    <div class="workspace-head">
+      <div><div class="eyebrow">Experiment output / 02</div><h2>Transfer observatory</h2></div>
+      <div class="head-actions"><div class="micro">PACKET-LEVEL TRACE · SHA-256 VERIFIED</div><button id="report" disabled title="Generate a standalone HTML report for the latest completed transfer">Generate report ↗</button></div>
+    </div>
+    <div id="verdict" class="ok"><strong>READY TO RUN</strong><span>Choose a network preset and start an experiment.</span></div>
+    <div class="strip" id="stats" aria-live="polite"></div>
+    <div class="note" id="tcpnote"></div>
+
+    <div class="card" id="diagcard" style="display:none">
+      <div class="bar"><span>Run debrief / what happened</span><span>PLAIN-LANGUAGE SUMMARY</span></div>
+      <ul id="diag" class="diag"></ul>
+    </div>
+
+    <div class="card">
+      <div class="bar"><span>01 / Congestion window over time</span><span><button id="replay">▶ Replay</button><button id="expcsv">Export CSV</button><button id="exppng">Export PNG</button></span></div>
+      <canvas id="cv" aria-label="Congestion window timeline"></canvas>
+      <div class="lg">
+        <span><s style="border-color:var(--cwnd)"></s>cwnd</span>
+        <span><s style="border-color:var(--sig);border-top-style:dashed"></s>ssthresh</span>
+        <span><s style="border-color:var(--grey);border-top-width:1px"></s>in flight</span>
+        <span style="color:var(--sig)">▲ fast retransmit</span>
+        <span style="color:var(--bad)">▲ timeout</span>
+        <span>▲ tail-loss probe</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="bar"><span>02 / Packet repair map</span><span>ONE TILE PER DATA PACKET</span></div>
+      <div id="mapbox"><div class="empty">Run a transfer to reveal the packet trail.</div></div>
+      <canvas id="mapcv" height="10"></canvas>
+    </div>
+
+    <div class="card">
+      <div class="bar"><span>03 / Independent streams experiment</span><span>HEAD-OF-LINE BLOCKING</span></div>
+      <div class="row2">
+        <label>Streams <select id="hs"><option>2</option><option selected>4</option><option>8</option></select></label>
+        <label>Data per stream <select id="hp"><option value="0.2">0.2 MB</option><option value="0.4" selected>0.4 MB</option><option value="1">1 MB</option></select></label>
+        <button id="hrun" class="btn2">Run streams experiment ↗</button>
+      </div>
+      <div class="note" id="hnote">Sends the same data twice on the selected network: once as one ordered stream and once as independent streams. Try a WAN-like preset to make the difference easier to observe.</div>
+      <div id="hres"></div><canvas id="hcv" style="width:100%;height:230px;display:none"></canvas>
+    </div>
+
+    <div class="card">
+      <div class="bar"><span>04 / Network activity</span><span>PACKET IMPAIRMENT SUMMARY</span></div>
+      <div id="net"><div class="empty">Network activity will appear after a run.</div></div>
+    </div>
+
+    <div class="card">
+      <div class="bar"><span>05 / Run history</span><span>SELECT A RUN TO INSPECT · TICK TO OVERLAY</span></div>
+      <div class="hist"><table id="hist"></table></div>
+      <div class="note">Select a previous run to revisit its details, or overlay it on the congestion-window chart.</div>
+    </div>
+  </section>
+</main>
+<footer class="footer"><span>UDP→TCP / FIELD SYSTEMS NETWORK EXPERIMENTS</span><span>LOCAL DASHBOARD · BUILT FOR INSPECTION</span></footer>
+<script>
+const $=id=>document.getElementById(id);const f=(n,d=1)=>Number(n).toFixed(d);
+const S=[['loss','Packet loss','%',0,30,.5],['reorder','Reordering','%',0,30,.5],['dup','Duplication','%',0,30,.5],['corrupt','Corruption','%',0,10,.5],['delay','One-way delay',' ms',0,300,1],['jitter','Jitter',' ms',0,50,1],['rate','Bottleneck rate (0 = none)',' Mbps',0,100,1],['queue','Bottleneck queue',' pkts',5,200,5]];
+const S2=[['size','File size',' MB',.2,20,.2,2],['slow','Receiver reads at (0 = unlimited)',' KB/s',0,5000,100,0]];
+const val={};let runs=[],cur=null,prog=1,cc='reno',tlp=1,rack=1,fec=0,tcpMb={},live=null;
+function mk(box,defs){defs.forEach(([k,l,u,mn,mx,st,d])=>{val[k]=d||0;const e=document.createElement('div');e.className='sl';e.innerHTML=`<label for="s_${k}">${l}</label><output id="o_${k}"></output><input id="s_${k}" type="range" min="${mn}" max="${mx}" step="${st}" value="${val[k]}">`;box.appendChild(e);const i=e.querySelector('input'),o=e.querySelector('output');const up=()=>{val[k]=+i.value;o.textContent=i.value+u};i.oninput=()=>{up();document.querySelectorAll('#presets .chip').forEach(c=>c.classList.remove('on'))};up()})}
+function setv(k,v){val[k]=v;const i=$('s_'+k);i.value=v;i.dispatchEvent(new Event('input'))}
+mk($('sliders'),S);mk($('sliders2'),S2);
+fetch('/api/presets').then(r=>r.json()).then(ps=>{ps.forEach((p,n)=>{const b=document.createElement('button');b.className='chip';b.textContent=p.name;b.onclick=()=>{S.forEach(([k])=>setv(k,p[k]||0));if(!p.queue)setv('queue',100);document.querySelectorAll('#presets .chip').forEach(c=>c.classList.remove('on'));b.classList.add('on')};$('presets').appendChild(b);if(n==0)b.click()})});
+document.querySelectorAll('#cc [data-v]').forEach(b=>b.onclick=()=>{cc=b.dataset.v;document.querySelectorAll('#cc [data-v]').forEach(x=>x.classList.toggle('on',x===b))});
+$('tlp').onclick=()=>{tlp=1-tlp;$('tlp').classList.toggle('on',!!tlp)};
+$('rack').onclick=()=>{rack=1-rack;$('rack').classList.toggle('on',!!rack)};
+document.querySelectorAll('#fec [data-v]').forEach(b=>b.onclick=()=>{fec=+b.dataset.v;document.querySelectorAll('#fec [data-v]').forEach(x=>x.classList.toggle('on',x===b))});
+function label(r){return r.impair==='none'?'clean link':r.impair.replace(/_ms/g,'ms').replace(/_mbps/g,'Mbps')}
+function cfgl(r){return r.cc+' · '+(r.rack&&r.tlp?'RACK+TLP':r.rack?'RACK':r.tlp?'TLP':'classic')+(r.fec?' · FEC '+(r.fec<0?'auto':'1/'+r.fec):'')}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function exec(extra){
+ const q=new URLSearchParams({...val,cc,tlp,rack,fec,...(extra||{})});
+ const s=await (await fetch('/api/start?'+q)).json();if(!s.started)throw new Error('another run is in progress');
+ live={trace:[],events:[],size:val.size*1e6,live:true,impair:''};cur=live;prog=1;let from=0,d;
+ for(;;){d=await (await fetch('/api/poll?from='+from)).json();from=d.n;d.pts.forEach(p=>live.trace.push(p));
+  const v=$('verdict');v.className='run';v.innerHTML=`<strong>RUNNING…</strong><span>${Math.round(d.frac*100)}% · ${f(d.mbps,0)} Mbps · ${live.trace.length} samples</span>`;draw();
+  if(d.state==2)break;await sleep(70)}
+ const r=d.result;r.show=false;r.id=runs.length+1;r.liveN=live.trace.length;runs.push(r);cur=r;live=null;$('report').disabled=false;show(r);
+ if(!tcpMb[val.size]){fetch('/api/tcp?size='+val.size).then(x=>x.json()).then(t=>{tcpMb[val.size]=t.mbps;note()})}else note();
+ if(r.liveN<12){prog=0;play()}else{prog=1;draw()}return r}
+function busy(on){['run','abcc','abrec','hrun'].forEach(i=>$(i).disabled=on);$('run').textContent=on?'RUNNING…':'RUN TRANSFER';$('busy').classList.toggle('on',on)}
+async function guard(fn){busy(true);try{await fn()}catch(e){$('verdict').className='bad';$('verdict').innerHTML='<strong>ERROR</strong><span>'+e+'</span>'}busy(false)}
+$('run').onclick=()=>guard(()=>exec());
+$('abcc').onclick=()=>guard(async()=>{const a=await exec({cc:'reno'}),b=await exec({cc:'cubic'});a.show=b.show=true;hist();draw()});
+$('abrec').onclick=()=>guard(async()=>{const a=await exec({rack:0,tlp:0,minrto:100}),b=await exec({rack:1,tlp:1,minrto:0});a.show=b.show=true;hist();draw();
+ $('tcpnote').textContent=`Classic recovery: ${f(a.mbps,1)} Mbps, ${a.cli.rto} timeouts.  Modern recovery (RACK + tail-loss probes + 20 ms RTO floor): ${f(b.mbps,1)} Mbps, ${b.cli.rto} timeouts.  (${f(b.mbps/Math.max(a.mbps,.01),1)}x)`});
+addEventListener('keydown',e=>{if(e.key==='r'&&!e.ctrlKey&&!e.metaKey&&!$('run').disabled)$('run').click()});
+function note(){const t=cur&&tcpMb[cur.size/1e6];if(!t)return;$('tcpnote').textContent=cur.impair==='none'?`Native kernel TCP on this machine, same clean link: ${f(t,0)} Mbps. This engine reached ${f(100*cur.mbps/t,0)}% of that.`:`Reference only: native kernel TCP on a clean link here does ${f(t,0)} Mbps. This run had an impaired network, so it is not a like-for-like comparison.`}
+function show(r){const v=$('verdict'),ok=r.ok;v.className=ok?'ok':'bad';
+ v.innerHTML=ok?`<strong>✓ DELIVERED INTACT</strong><span>sent = received · SHA-256 ${r.sha.slice(0,24)}…</span>`:`<strong>✗ DELIVERY FAILED</strong><span>${r.err||'hash mismatch'}</span>`;
+ const c=r.cli,s=r.srv;
+ $('stats').innerHTML=[['Throughput',f(r.mbps,1),'Mbps'],['Transfer time',f(r.duration,2),'seconds'],['Retransmits',c.retx,`${c.fast} fast · ${c.rto} RTO · ${c.tlp} probe · ${c.rack} RACK`],['Out of order',s.ooo,`${s.dup} duplicates discarded`],['Corrupt rejected',c.bad+s.bad,'failed checksum'],['Smoothed RTT',f(c.srtt_ms,1),'ms · RTO '+f(c.rto_ms,0)+' ms']].map(x=>`<div class="cell"><small>${x[0]}</small><b>${x[1]}</b><br><i>${x[2]}</i></div>`).join('');
+ const p=r.proxy;$('net').innerHTML=!p?'<div class="empty">Clean link: the proxy was bypassed, so no packets were harmed.</div>':
+ `<table><tr><th>direction</th><th>packets seen</th><th>lost</th><th>queue drops</th><th>duplicated</th><th>reordered</th><th>corrupted</th></tr>`+[['client → server',p.fwd],['server → client (ACKs)',p.rev]].map(([n,d])=>`<tr><td>${n}</td><td>${d.rx}</td><td>${d.lost}</td><td>${d.qdrop}</td><td>${d.dup}</td><td>${d.reorder}</td><td>${d.corrupt}</td></tr>`).join('')+'</table>'+(c.spurious?`<div class="note">${c.spurious} retransmit${c.spurious>1?'s were':' was'} detected as unnecessary (the original arrived late) and the reordering tolerance was widened.</div>`:'')+(c.probes?`<div class="note">Flow control: the receiver closed its window and the sender sent ${c.probes} zero-window probes while waiting.</div>`:'');
+ hist();drawMap(r);renderDiag(r);draw()}
+function drawMap(r){const cv=$('mapcv'),m=r.map||'',n=m.length,bx=$('mapbox');
+ if(!n){bx.innerHTML='<div class="empty">no data segments</div>';cv.height=0;return}
+ let rep=0,mul=0;for(const ch of m){if(ch!=='0')rep++;if(ch>'1')mul++}
+ bx.innerHTML=`<div class="note">${rep} of ${r.segments} packets (${f(100*rep/r.segments,1)}%) needed at least one retransmission${mul?`, ${mul} needed two or more`:''}. Each square is one packet in send order: <span style="color:var(--cell)">■</span> delivered first time · <span style="color:var(--sig)">■</span> repaired once · <span style="color:var(--bad)">■</span> twice · <span style="color:var(--deep)">■</span> 3+</div>`;
+ const d=devicePixelRatio||1,w=cv.clientWidth-28,c=7,g=2,cols=Math.max(1,Math.floor(w/(c+g))),rows=Math.ceil(n/cols);
+ cv.width=(w+28)*d;cv.height=(rows*(c+g)+12)*d;cv.style.height=(rows*(c+g)+12)+'px';const x=cv.getContext('2d');x.scale(d,d);const st=getComputedStyle(document.documentElement),C=k=>st.getPropertyValue(k).trim();
+ const col=['--cell','--sig','--bad','--deep'];for(let i=0;i<n;i++){x.fillStyle=C(col[Math.min(3,+m[i])]);x.fillRect(14+(i%cols)*(c+g),6+Math.floor(i/cols)*(c+g),c,c)}}
+function hist(){$('hist').innerHTML='<tr><th>#</th><th>network</th><th>config</th><th>Mbps</th><th>retx</th><th>RTO</th><th>ok</th><th>overlay</th></tr>'+runs.slice().reverse().map(r=>`<tr class="${r===cur?'cur':''}"><td>${r.id}</td><td style="text-align:left;cursor:pointer" onclick="pick(${r.id})">${label(r)}</td><td>${cfgl(r)}</td><td>${f(r.mbps,1)}</td><td>${r.cli.retx}</td><td>${r.cli.rto}</td><td style="color:var(--${r.ok?'ok':'bad'})">${r.ok?'✓':'✗'}</td><td><input type="checkbox" ${r.show?'checked':''} onchange="runs[${r.id-1}].show=this.checked;draw()"></td></tr>`).join('')}
+function renderDiag(r){const c=r.cli,s=r.srv,p=r.proxy,L=[],pc=(a,b)=>b?f(100*a/b,1)+'%':'0%';
+ L.push(r.ok?`All <b>${f(r.size/1e6,1)} MB</b> arrived intact: the SHA-256 fingerprints of the sent and received data match.`:`<b>The data did not arrive intact</b> (${r.err||'fingerprint mismatch'}).`);
+ if(p){const lost=p.fwd.lost+p.rev.lost,seen=p.fwd.rx+p.rev.rx,b=[`destroyed <b>${lost}</b> of ${seen} packets (${pc(lost,seen)})`];
+  const qd=p.fwd.qdrop+p.rev.qdrop,du=p.fwd.dup+p.rev.dup,re=p.fwd.reorder+p.rev.reorder,co=p.fwd.corrupt+p.rev.corrupt;
+  if(qd)b.push(`dropped ${qd} because the bottleneck queue was full`);if(du)b.push(`duplicated ${du}`);if(re)b.push(`delayed ${re} so they arrived out of order`);if(co)b.push(`damaged ${co}`);
+  L.push('The network '+b.join(', ')+'.')}else L.push('The link was clean: no packet was harmed.');
+ L.push(c.retx?`<b>${c.retx}</b> packets (${pc(c.retx,c.sent)} of everything sent) had to be sent again: ${c.fast} noticed through repeated receipts, ${c.rack} through RACK's timing rule, ${c.tlp} through tail-loss probes and ${c.rto} only after a timeout.${c.rto?'':' No timeouts were needed.'}`:'Nothing had to be sent again.');
+ if(c.fec_sent)L.push(`Forward error correction sent ${c.fec_sent} parity packets (${pc(c.fec_sent,c.sent)} overhead). The receiver rebuilt <b>${s.fec_rec}</b> lost packets by itself, saving a full round trip for each.${r.fec<0?' Adaptive setting at the end: '+(c.fec_k?'1 parity per '+c.fec_k+' packets.':'off.'):''}`);
+ else if(r.fec<0)L.push('Adaptive FEC stayed off: the link looked clean, so it added no overhead.');
+ const m=/rate_mbps=([\d.]+)/.exec(r.impair);if(m)L.push(`The sender used <b>${f(100*r.mbps/+m[1],0)}%</b> of the ${m[1]} Mbps bottleneck${p&&p.fwd.qdrop?'; each time the queue overflowed it slowed down, which is the saw-tooth in the graph':''}.`);
+ if(c.spurious)L.push(`${c.spurious} re-sends turned out to be unnecessary (the original packet was only late), so the engine widened its reordering tolerance.`);
+ if(c.probes)L.push(`The receiver closed its window ${c.probes} times; the sender waited with zero-window probes (flow control).`);
+ $('diag').innerHTML=L.map(x=>'<li>'+x+'</li>').join('');$('diagcard').style.display=''}
+$('hrun').onclick=()=>guard(async()=>{$('hres').innerHTML='<div class="empty">running both experiments…</div>';$('hcv').style.display='none';
+ const q=new URLSearchParams({...val,cc,tlp,rack,fec,streams:$('hs').value,per:$('hp').value});renderHol(await (await fetch('/api/hol?'+q)).json())});
+function renderHol(h){const o=h.ordered,m=h.multi,row=(n,a,b)=>`<tr><td>${n}</td><td>${a}</td><td>${b}</td></tr>`;
+ $('hres').innerHTML=`<table><tr><th></th><th>one ordered stream (TCP-like)</th><th>independent streams</th></tr>`+row('data intact (SHA-256 per stream)',o.ok?'✓':'✗',m.ok?'✓':'✗')+row('everything finished after',f(o.duration,2)+' s',f(m.duration,2)+' s')+row('average data held back',f(o.avg,1)+' KB',f(m.avg,1)+' KB')+row('peak data held back',f(o.peak,1)+' KB',f(m.peak,1)+' KB')+row('share of time something was held back',Math.round(o.frac*100)+' %',Math.round(m.frac*100)+' %')+'</table>'
+ +`<div class="note">${m.avg>0&&o.avg>0?`Independent streams held back <b>${f(o.avg/m.avg,1)}x less data</b>. `:''}"Held back" means bytes that already arrived but could not be handed to the application yet because something earlier was missing. With one ordered stream, one lost packet blocks everything behind it; with independent streams it blocks only the stream it belonged to. Total time is similar because loss repair still works per connection: the gain is that unaffected streams keep flowing.</div>`;drawHol(h)}
+function drawHol(h){const cv=$('hcv');cv.style.display='block';const d=devicePixelRatio||1,w=cv.clientWidth,ht=230;cv.width=w*d;cv.height=ht*d;const g=cv.getContext('2d');g.scale(d,d);
+ const st=getComputedStyle(document.documentElement),C=k=>st.getPropertyValue(k).trim();g.font='11px '+C('--mono');
+ const L=46,R=12,T=14,B=26,pw=w-L-R,ph=ht-T-B,A=h.ordered.tl,Bm=h.multi.tl;let tm=0,ym=1;[A,Bm].forEach(a=>a.forEach(p=>{tm=Math.max(tm,p[0]);ym=Math.max(ym,p[1])}));ym*=1.1;tm=tm||1;
+ const X=t=>L+t/tm*pw,Y=v=>T+ph-v/ym*ph;g.strokeStyle=C('--rule');g.fillStyle=C('--mute');g.textAlign='right';
+ for(let i=0;i<=4;i++){const v=ym*i/4;g.beginPath();g.moveTo(L,Y(v));g.lineTo(L+pw,Y(v));g.stroke();g.fillText(f(v,0)+' KB',L-6,Y(v)+4)}
+ g.textAlign='center';for(let i=0;i<=5;i++){const t=tm*i/5;g.fillText(f(t,1)+'s',X(t),ht-8)}g.strokeStyle=C('--ink');g.strokeRect(L,T,pw,ph);
+ const ln=(a,col,fill)=>{g.beginPath();g.strokeStyle=col;g.lineWidth=1.8;a.forEach((p,i)=>i?g.lineTo(X(p[0]),Y(p[1])):g.moveTo(X(p[0]),Y(p[1])));g.stroke()};
+ ln(A,C('--sig'));ln(Bm,C('--cwnd'));g.textAlign='left';g.fillStyle=C('--sig');g.fillText('— one ordered stream: data held back waiting for a lost packet',L+8,T+14);g.fillStyle=C('--cwnd');g.fillText('— independent streams',L+8,T+30)}
+function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
+function esc(x){return String(x==null?'':x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function reportHtml(r){
+ const c=r.cli,s=r.srv,p=r.proxy,stamp=new Date().toLocaleString(),safeName=`udp-tcp-run-${r.id}-report.html`;
+ const stat=(k,v,u='')=>`<div class="metric"><small>${esc(k)}</small><strong>${esc(v)}</strong><span>${esc(u)}</span></div>`;
+ const proxyRows=p?[['Client → server',p.fwd],['Server → client (ACKs)',p.rev]].map(([n,d])=>`<tr><td>${n}</td><td>${d.rx}</td><td>${d.lost}</td><td>${d.qdrop}</td><td>${d.dup}</td><td>${d.reorder}</td><td>${d.corrupt}</td></tr>`).join(''):'<tr><td colspan="7">Clean link — impairment proxy was bypassed.</td></tr>';
+ const trace=r.trace||[],maxT=Math.max(0.001,...trace.map(x=>x[0])),maxC=Math.max(1,...trace.map(x=>x[1]));
+ const pts=trace.map(x=>`${(34+x[0]/maxT*700).toFixed(1)},${(190-x[1]/maxC*160).toFixed(1)}`).join(' ');
+ const traceRows=trace.filter((_,i)=>i===0||i===trace.length-1||i%Math.max(1,Math.ceil(trace.length/24))===0).map(x=>`<tr><td>${f(x[0],3)}</td><td>${f(x[1],0)}</td><td>${f(x[2],0)}</td><td>${f(x[3],0)}</td><td>${f(x[4],2)}</td></tr>`).join('');
+ const retxPct=c.sent?f(100*c.retx/c.sent,2)+'%':'0%';
+ const fec=r.fec<0?'Adaptive':r.fec?`1 parity / ${r.fec} packets`:'Off';
+ return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>UDP→TCP · Run ${r.id} report</title><style>
+ :root{--ink:#172b36;--muted:#637579;--line:#dce2d9;--paper:#fffefa;--bg:#f1f0e9;--teal:#167c80;--lime:#d8f06a;--ok:#247b56;--bad:#c4473c}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 Inter,system-ui,Segoe UI,sans-serif}.page{max-width:1040px;margin:36px auto;padding:0 22px 50px}.mast{background:var(--ink);color:#fff;padding:28px 32px;border-radius:14px}.eyebrow,small,.mono{font-family:Consolas,monospace;letter-spacing:.08em;text-transform:uppercase}.eyebrow{font-size:10px;color:var(--lime)}h1{font-size:34px;letter-spacing:-.05em;margin:7px 0}p{color:var(--muted)}.mast p{color:#c4d0cc;margin:0}.status{display:inline-block;margin-top:17px;padding:5px 10px;border-radius:4px;background:${r.ok?'#dff1e6':'#fbe4df'};color:${r.ok?'#17623f':'#9d3028'};font:700 11px Consolas,monospace}.meta{margin-top:10px;color:#c4d0cc;font:11px Consolas,monospace}.section{background:var(--paper);border:1px solid var(--line);border-radius:12px;margin-top:16px;padding:22px}.section h2{font:700 12px Consolas,monospace;text-transform:uppercase;letter-spacing:.1em;margin:0 0 16px}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.metric{padding:14px;background:#f5f6ef;border:1px solid var(--line);border-radius:8px;min-width:0}.metric small{display:block;color:var(--muted);font-size:9px}.metric strong{display:block;font:700 23px Consolas,monospace;overflow-wrap:anywhere}.metric span{font:10px Consolas,monospace;color:var(--muted)}table{width:100%;border-collapse:collapse;font:11px Consolas,monospace}th,td{text-align:right;padding:9px 10px;border-bottom:1px solid #e9ece5}th:first-child,td:first-child{text-align:left}th{font-size:9px;color:var(--muted);text-transform:uppercase;background:#f5f6ef}.config{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.config div{padding:10px 12px;border:1px solid var(--line);border-radius:7px}.config small{display:block;color:var(--muted);font-size:9px}.config b{font:12px Consolas,monospace;overflow-wrap:anywhere}.chart{width:100%;height:auto;background:#fbfcf8;border:1px solid var(--line);border-radius:8px}.hash{overflow-wrap:anywhere;font:11px Consolas,monospace;background:#f5f6ef;padding:12px;border-radius:7px}.foot{font:10px Consolas,monospace;color:var(--muted);text-align:center;margin-top:20px}@media(max-width:650px){.metrics{grid-template-columns:repeat(2,1fr)}.config{grid-template-columns:1fr}.mast{padding:22px}.section{padding:16px}.page{margin:16px auto}}
+ </style></head><body><main class="page"><header class="mast"><div class="eyebrow">FIELD SYSTEMS / TRANSPORT LAB</div><h1>Transfer run report</h1><p>UDP→TCP · Reliable transport over UDP</p><div class="status">${r.ok?'✓ DELIVERY VERIFIED':'✕ DELIVERY NOT VERIFIED'}</div><div class="meta">RUN #${r.id} · GENERATED ${esc(stamp)} · LATEST COMPLETED TRANSFER</div></header>
+ <section class="section"><h2>01 / Performance summary</h2><div class="metrics">${stat('Throughput',f(r.mbps,2),'Mbps')}${stat('Transfer duration',f(r.duration,3),'seconds')}${stat('Data size',f(r.size/1e6,2),'MB')}${stat('Retransmissions',c.retx,retxPct+' of sent packets')}${stat('Smoothed RTT',f(c.srtt_ms,2),'ms')}${stat('Final congestion window',c.cwnd,'packets')}</div></section>
+ <section class="section"><h2>02 / Experiment configuration</h2><div class="config"><div><small>Network conditions</small><b>${esc(r.impair||'Not recorded')}</b></div><div><small>Congestion control</small><b>${esc(r.cc).toUpperCase()}</b></div><div><small>Loss recovery</small><b>${r.rack?'RACK':'No RACK'} · ${r.tlp?'TLP enabled':'TLP disabled'}</b></div><div><small>Forward error correction</small><b>${esc(fec)}</b></div><div><small>Minimum RTO</small><b>${f(r.minrto,0)} ms</b></div><div><small>Handshake time</small><b>${f(r.handshake_ms,3)} ms</b></div></div></section>
+ <section class="section"><h2>03 / Reliability and packet recovery</h2><div class="metrics">${stat('Packets sent',c.sent)}${stat('Packets received',c.recv)}${stat('Fast retransmits',c.fast)}${stat('RTO timeouts',c.rto)}${stat('RACK retransmits',c.rack)}${stat('Tail-loss probes',c.tlp)}${stat('Spurious retransmits',c.spurious)}${stat('FEC parity sent',c.fec_sent)}${stat('FEC packets recovered',s.fec_rec)}</div><p>Packet repair map: ${r.segments} data segments recorded; ${esc((r.map||'').split('').filter(x=>x!=='0').length)} segments required at least one retransmission.</p><div class="hash"><b>Sent SHA-256</b><br>${esc(r.want)}<br><br><b>Received SHA-256</b><br>${esc(r.sha)}<br><br><b>Integrity</b>: ${r.ok&&r.sha===r.want?'MATCH':'MISMATCH / TRANSFER FAILED'}</div></section>
+ <section class="section"><h2>04 / Network impairment</h2><table><thead><tr><th>Direction</th><th>Seen</th><th>Lost</th><th>Queue drops</th><th>Duplicated</th><th>Reordered</th><th>Corrupted</th></tr></thead><tbody>${proxyRows}</tbody></table></section>
+ <section class="section"><h2>05 / Congestion window timeline</h2>${trace.length?`<svg class="chart" viewBox="0 0 760 220" role="img" aria-label="Congestion window samples over time"><path d="M34 20V190H734" fill="none" stroke="#879598"/><polyline points="${pts}" fill="none" stroke="#167c80" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/><text x="34" y="210" fill="#637579" font-size="10">0 s</text><text x="734" y="210" text-anchor="end" fill="#637579" font-size="10">${f(maxT,2)} s</text><text x="42" y="14" fill="#637579" font-size="10">CWND · PACKETS</text></svg>`:'<p>No congestion-window samples were recorded for this transfer.</p>'}<p>Selected trace samples</p><table><thead><tr><th>Time (s)</th><th>CWND</th><th>SSTHRESH</th><th>In flight</th><th>Smoothed RTT (ms)</th></tr></thead><tbody>${traceRows||'<tr><td colspan="5">No trace samples.</td></tr>'}</tbody></table></section>
+ <div class="foot">Generated locally by the UDP→TCP Transport Lab dashboard · Values describe this run only.</div></main></body></html>`;
+}
+$('report').onclick=()=>{const latest=runs[runs.length-1];if(!latest)return;dl(new Blob([reportHtml(latest)],{type:'text/html;charset=utf-8'}),`udp-tcp-run-${latest.id}-report.html`)};
+$('exppng').onclick=()=>$('cv').toBlob(b=>dl(b,'cwnd.png'));
+$('expcsv').onclick=()=>{if(!cur||!cur.trace.length)return;dl(new Blob(['t,cwnd,ssthresh,flight,srtt_ms\n'+cur.trace.map(p=>p.slice(0,5).join(',')).join('\n')],{type:'text/csv'}),'cwnd.csv')};
+function pick(i){cur=runs[i-1];show(cur);note();prog=1;draw()}
+let raf;function play(){cancelAnimationFrame(raf);const t0=performance.now(),D=3200;const st=n=>{prog=Math.min(1,(n-t0)/D);draw();if(prog<1)raf=requestAnimationFrame(st)};raf=requestAnimationFrame(st)}
+$('replay').onclick=()=>{if(cur){prog=0;play()}};
+const OV=['#9c6b00','#2b8a3e','#495057','#a61e4d'];
+function draw(){const cv=$('cv'),d=devicePixelRatio||1,w=cv.clientWidth,h=340;cv.width=w*d;cv.height=h*d;const g=cv.getContext('2d');g.scale(d,d);
+ const st=getComputedStyle(document.documentElement),C=n=>st.getPropertyValue(n).trim();g.font='11px '+C('--mono');
+ const L=46,R=12,T=12,B=28,pw=w-L-R,ph=h-T-B,sh=runs.filter(r=>r.show||r===cur);if(live&&!sh.includes(live))sh.push(live);
+ if(!sh.length||!cur||!cur.trace.length){g.fillStyle=C('--mute');g.textAlign='center';g.fillText('run a transfer to see the congestion window',w/2,h/2);return}
+ let tm=0,ym=0;sh.forEach(r=>r.trace.forEach(p=>{tm=Math.max(tm,p[0]);ym=Math.max(ym,p[1]/1400,p[3]/1400)}));ym=(ym*1.1)||1;tm=tm||1;
+ const X=t=>L+t/tm*pw,Y=v=>T+ph-v/ym*ph;
+ g.strokeStyle=C('--rule');g.fillStyle=C('--mute');g.lineWidth=1;g.textAlign='right';
+ const ys=Math.pow(10,Math.floor(Math.log10(ym/4)))*([1,2,5,10].find(m=>ym/(Math.pow(10,Math.floor(Math.log10(ym/4)))*m)<=6)||10);
+ for(let v=0;v<=ym;v+=ys){g.beginPath();g.moveTo(L,Y(v));g.lineTo(L+pw,Y(v));g.stroke();g.fillText(f(v,0),L-6,Y(v)+4)}
+ g.textAlign='center';const xs=tm/6;for(let i=0;i<=6;i++){const t=i*xs;g.fillText(f(t,tm<3?2:1)+'s',X(t),h-10)}
+ g.strokeStyle=C('--ink');g.strokeRect(L,T,pw,ph);
+ const line=(r,k,col,wd,dash,lim)=>{g.beginPath();g.strokeStyle=col;g.lineWidth=wd;g.setLineDash(dash||[]);let on=0;r.trace.forEach(p=>{if(p[0]>lim)return;let v=p[k];if(k==2&&(v<=0||v>1e8)){on=0;return}const x=X(p[0]),y=Y(v/1400);on?g.lineTo(x,y):g.moveTo(x,y);on=1});g.stroke();g.setLineDash([])};
+ sh.forEach((r,i)=>{if(r!==cur)line(r,1,OV[i%4],1.5,[],1e9)});
+ const lim=prog*tm;line(cur,3,C('--grey'),1,[],lim);line(cur,2,C('--sig'),1.5,[5,4],lim);line(cur,1,C('--cwnd'),2.2,[],lim);
+ cur.events.forEach(([t,k])=>{if(t>lim)return;const x=X(t),col=k==1?C('--bad'):k==2?C('--grey'):C('--sig');g.strokeStyle=col;g.globalAlpha=.25;g.lineWidth=1;g.beginPath();g.moveTo(x,T);g.lineTo(x,T+ph);g.stroke();g.globalAlpha=1;g.fillStyle=col;g.beginPath();g.moveTo(x,T+ph-1);g.lineTo(x-4,T+ph+7);g.lineTo(x+4,T+ph+7);g.fill()});
+ if(prog<1){g.strokeStyle=C('--ink');g.lineWidth=1;g.beginPath();g.moveTo(X(lim),T);g.lineTo(X(lim),T+ph);g.stroke()}}
+addEventListener('resize',()=>{if(cur){draw();if(cur.map)drawMap(cur)}});
+</script></body></html>
